@@ -230,7 +230,7 @@ ENDIF (NMZ_MIC_OFFLOAD)
 ADD_SUBDIRECTORY(libnormaliz)
 
 # add the normaliz executable
-ADD_EXECUTABLE (normaliz normaliz.cpp)
+ADD_EXECUTABLE (normaliz normaliz.cpp minkowski/minkowski.cpp)
 
 IF (NMZ_BUILD_STATIC)
   TARGET_LINK_LIBRARIES (normaliz normaliz-static)
