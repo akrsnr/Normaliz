@@ -26,14 +26,9 @@ vector<vector <Integer> > findGens(const MatrixXf& A) {
 
     //std::cout << "Col num:" << A.cols() << std::endl;
     for (size_t i = 0; i < rows; ++i) {
-        transposedMatrices.emplace_back(A.row(i).transpose());
+        transposedMatrices.emplace_back(const_cast<MatrixXf&>(A).row(i).transpose());
         //std::cout << "Ray " << i + 1 << ": \n" << transposedMatrices.at(i) << std::endl;
     }
-
-
-    /*for (auto const &i : transposedMatrices) {
-        std::cout << "soner\n" << i << std::endl;
-    }*/
 
 
     for (size_t i = 0; i < rows; ++i) {
@@ -57,6 +52,7 @@ vector<vector <Integer> > findGens(const MatrixXf& A) {
 
 }
 
+/* Here, "in case" */
 void removeDuplicatePairs(std::vector<std::vector<Integer> >& v) {
     std::sort(v.begin(), v.end());
     v.erase(std::unique(v.begin(), v.end()), v.end());
