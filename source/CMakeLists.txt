@@ -264,6 +264,8 @@ IF (NMZ_MAX)
     #TARGET_LINK_LIBRARIES (normaliz maxsimplex) 
 ENDIF (NMZ_MAX)
 
+ADD_SUBDIRECTORY(minkowski)
+
 #custom make targets
 ADD_CUSTOM_TARGET (uninstall @echo uninstall package)
 IF (UNIX)
