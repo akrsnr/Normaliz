@@ -59,12 +59,17 @@ void removeDuplicatePairs(std::vector<std::vector<Integer> >& v) {
 }
 
 void printComponents(const vector< vector<Integer> >& v, string type) {
+    std::string delim;
     int index = 0;
     for ( auto const& i : v ) {
+        delim = "";
         std::cout << type << " Component-" << ++index << std::endl;
+        std::cout << "(";
         for ( auto const& j : i ) {
-            std::cout << j << std::endl;
+            std::cout << delim << j;
+            delim = ", ";
         }
+        std::cout << ")\n";
     }
     std::cout << std::endl;
 }
