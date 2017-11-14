@@ -1,0 +1,152 @@
+// This file is part of Eigen, a lightweight C++ template library
+// for linear algebra.
+//
+// Copyright (C) 2014 Benoit Steiner <benoit.steiner.goog@gmail.com>
+// Copyright (C) 2013 Christian Seiler <christian@iwakd.de>
+//
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+//#ifndef EIGEN_CXX11_TENSOR_MODULE
+//#define EIGEN_CXX11_TENSOR_MODULE
+
+#include "external/eigen/Eigen/Core"
+
+#ifdef EIGEN_USE_SYCL
+#undef min
+#undef max
+#undef isnan
+#undef isinf
+#undef isfinite
+#include <SYCL/sycl.hpp>
+#include <map>
+#include <memory>
+#include <utility>
+#endif
+
+#include <Eigen/src/Core/util/DisableStupidWarnings.h>
+
+#include "external/eigen/unsupported/Eigen/SpecialFunctions"
+#include "external/eigen/unsupported/Eigen/CXX11/src/util/CXX11Meta.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/util/MaxSizeVector.h"
+
+/** \defgroup CXX11_Tensor_Module Tensor Module
+  *
+  * This module provides a Tensor class for storing arbitrarily indexed
+  * objects.
+  *
+  * \code
+  * #include <Eigen/CXX11/Tensor>
+  * \endcode
+  */
+
+#include <cmath>
+#include <cstddef>
+#include <cstring>
+
+#ifdef _WIN32
+typedef __int16 int16_t;
+typedef unsigned __int16 uint16_t;
+typedef __int32 int32_t;
+typedef unsigned __int32 uint32_t;
+typedef __int64 int64_t;
+typedef unsigned __int64 uint64_t;
+#else
+#include <stdint.h>
+#endif
+
+#if __cplusplus > 199711 || EIGEN_COMP_MSVC >= 1900
+#include <random>
+#endif
+
+#ifdef _WIN32
+#include <windows.h>
+#elif defined(__APPLE__)
+#include <mach/mach_time.h>
+#else
+#include <time.h>
+#endif
+
+#ifdef EIGEN_USE_THREADS
+#include "ThreadPool"
+#endif
+
+#ifdef EIGEN_USE_GPU
+#include <iostream>
+#include <cuda_runtime.h>
+#if __cplusplus >= 201103L
+#include <atomic>
+#include <unistd.h>
+#endif
+#endif
+
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorMacros.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorForwardDeclarations.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorMeta.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorFunctors.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorCostModel.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceDefault.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceThreadPool.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceCuda.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceSycl.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorIndexList.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorDimensionList.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorDimensions.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorInitializer.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorTraits.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorRandom.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorUInt128.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorIntDiv.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorGlobalFunctions.h"
+
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorBase.h"
+
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorEvaluator.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorExpr.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorReduction.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorReductionCuda.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorArgMax.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorConcatenation.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorContractionMapper.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorContractionBlocking.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorContraction.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorContractionThreadPool.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorContractionCuda.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorConversion.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorConvolution.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorFFT.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorPatch.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorImagePatch.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorVolumePatch.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorBroadcasting.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorChipping.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorInflation.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorLayoutSwap.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorMorphing.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorPadding.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorReverse.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorShuffling.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorStriding.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorCustomOp.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorEvalTo.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorForcedEval.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorGenerator.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorAssign.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorScan.h"
+
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorSycl.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorDevice.h"
+
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorStorage.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/Tensor.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorFixedSize.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorMap.h"
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorRef.h"
+
+#include "external/eigen/unsupported/Eigen/CXX11/src/Tensor/TensorIO.h"
+
+#include <Eigen/src/Core/util/ReenableStupidWarnings.h>
+
+//#endif // EIGEN_CXX11_TENSOR_MODULE
