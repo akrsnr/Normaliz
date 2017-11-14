@@ -69,7 +69,7 @@ void printComponents(const vector< vector<Integer> >& v, string type) {
             std::cout << delim << j;
             delim = ", ";
         }
-        std::cout << ")\n";
+        std::cout << ")" << std::endl;
     }
     std::cout << std::endl;
 }
