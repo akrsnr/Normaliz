@@ -3,13 +3,6 @@
 #include <libnormaliz/cone.h>
 #include "Eigen/Dense"
 
-#include <string>
-
-#include <cassert>
-
-
-
-
 using namespace Eigen;
 using std::vector;
 using namespace libnormaliz;
@@ -72,7 +65,7 @@ void removeDuplicatePairs(std::vector<std::vector<Integer> >& v) {
 void printComponents(const vector< vector<Integer> >& v, string type) {
     int index = 0;
     for ( auto const& i : v ) {
-        std::cout << type << " " << ++index << std::endl;
+        std::cout << type << " Component-" << ++index << std::endl;
         for ( auto const& j : i ) {
             std::cout << j << std::endl;
         }
@@ -104,6 +97,7 @@ Cone<Integer> createU(MatrixXf A) {
     std::cout << "\n\nRays:" << std::endl;
     //vector<MatrixXf> argumentMatrixRays =
     vector<vector <Integer> > argumentMatrixRays = findGens(A_null_space);
+    /* *** We have null spaced matrix from now on *** */
 
 
     std::cout << "\nIdentity Matrix " << rowSize << " x " << rowSize << std::endl;
@@ -121,106 +115,92 @@ Cone<Integer> createU(MatrixXf A) {
     Cone<Integer> coneMatrixA = Cone<Integer>(type, argumentMatrixRays);
     Cone<Integer> coneIdentity = Cone<Integer>(type, identityMatrixRays);
 
+    /* OMITTED FOR NOW */
+    const vector< vector<Integer> >& supportHyperPlanesA = coneMatrixA.getSupportHyperplanes();
+    const vector< vector<Integer> >& supportHyperPlanesIdentity = coneIdentity.getSupportHyperplanes();
+    /* OMITTED FOR NOW */
+
     vector< vector<Integer> > ineqsResultingCone;
     vector< vector<Integer> > equationsResultingCone;
 
-
-    const vector< vector<Integer> >& supportHyperPlanesA = coneMatrixA.getSupportHyperplanes();
-    const vector< vector<Integer> >& supportHyperPlanesIdentity = coneIdentity.getSupportHyperplanes();
-
-    //std::cout << supportHyperPlanesA << std::endl;
-/*
-    int index = 0;
-    for ( auto const& i : supportHyperPlanesA ) {
-        std::cout << "SupportHyperPlane Matrix A " << ++index << std::endl;
-        for ( auto const& j : i ) {
-            std::cout << j << std::endl;
-        }
-    }
-    std::cout << std::endl;
-
-    index = 0;
-    for ( auto const& i : supportHyperPlanesIdentity ) {
-        std::cout << "SupportHyperPlane Identity " << ++index << std::endl;
-        for ( auto const& j : i ) {
-            std::cout << j << std::endl;
-        }
-    }
-    std::cout << std::endl;
-*/
-
-    /* Equations A */
-    map< InputType , vector< vector<Integer> > > equationsA =
+    /* Pairs A(kerneled)
+     *
+       Type::inequalities
+       Type::equations
+       Type::congruences
+     */
+    map< InputType , vector< vector<Integer> > > pairsA =
         coneMatrixA.getConstraints();
 
-    const vector< vector<Integer> >& temp = equationsA[Type::equations];
-    std::cout << "Equations A vector size: " << temp.size() << std::endl;
-
-
-    int index = 0;
-    for ( auto const& i : temp ) {
-        // Gathering all matrices, here by "Equations" of the given matrix A
-        equationsResultingCone.push_back(i);
-        std::cout << "Equations A " << ++index << std::endl;
-        for ( auto const& j : i ) {
-            std::cout << j << std::endl;
-        }
-    }
-    std::cout << std::endl;
-
-
-    /* Inequalities A */
-    const vector< vector<Integer> >& ineqA = equationsA[Type::inequalities];
-    std::cout << "Inequalities A vector size: " << ineqA.size() << std::endl;
-
-
-    index = 0;
-    for ( auto const& i : ineqA ) {
-        // Gathering all matrices, here by "Inequalities" of the given matrix A
-        ineqsResultingCone.push_back(i);
-        std::cout << "Inequalities A " << ++index << std::endl;
-        for ( auto const& j : i ) {
-            std::cout << j << std::endl;
-        }
-    }
-    std::cout << std::endl;
-
-
-    /* Equations identity */
-    map< InputType , vector< vector<Integer> > > equationsIdentity =
+    /* Pairs Identity
+     *
+       Type::inequalities
+       Type::equations
+       Type::congruences
+     */
+    map< InputType , vector< vector<Integer> > > pairsIdentity =
         coneIdentity.getConstraints();
 
-    const vector< vector<Integer> >& temp2 = equationsIdentity[Type::equations];
-    std::cout << "Identity equality vector size: " << temp2.size() << std::endl;
-    index = 0;
-    for ( auto const& i : temp2 ) {
-        // Gathering all matrices, here by Equations of the Identity Matrix
-        equationsResultingCone.push_back(i);
-        std::cout << "Equations Identity " << ++index << std::endl;
-        for ( auto const& j : i ) {
-            std::cout << j << std::endl;
-        }
-    }
-    std::cout << std::endl;
+
+    /* Equations Matrix A(kerneled) */
+    const vector< vector<Integer> >& equationsA = pairsA[Type::equations];
+    std::cout << "Equations A(kerneled) vector size: " << equationsA.size() << std::endl;
+    printComponents(equationsA, "Equations A(kerneled)");
+
+    /* Equations identity */
+    const vector< vector<Integer> >& equationsIdentity = pairsIdentity[Type::equations];
+    std::cout << "Equations Identity vector size: " << equationsIdentity.size() << std::endl;
+    printComponents(equationsIdentity, "Equations Identity");
+
+    /* Gathering "Equations" */
+    equationsResultingCone.reserve(equationsA.size() + equationsIdentity.size());
+    equationsResultingCone.insert( equationsResultingCone.end(), equationsA.begin(), equationsA.end() );
+    equationsResultingCone.insert( equationsResultingCone.end(), equationsIdentity.begin(), equationsIdentity.end() );
+
+    /* Inequalities Matrix A(kerneled) */
+    const vector< vector<Integer> >& ineqA = pairsA[Type::inequalities];
+    std::cout << "Inequalities A(kerneled) vector size: " << ineqA.size() << std::endl;
+    printComponents(ineqA, "Inequalities A(kerneled)");
+
 
     /* Inequalities identity */
-    const vector< vector<Integer> >& ineqIdentity = equationsIdentity[Type::inequalities];
-    std::cout << "Identity inequalities vector size: " << ineqIdentity.size() << std::endl;
-    index = 0;
-    for ( auto const& i : ineqIdentity ) {
-        // Gathering all matrices, here by "Inequalities" of the Identity Matrix
-        ineqsResultingCone.push_back(i);
-        std::cout << "Inequalities Identity " << ++index << std::endl;
-        for ( auto const& j : i ) {
-            std::cout << j << std::endl;
-        }
-    }
-    std::cout << std::endl;
+    const vector< vector<Integer> >& ineqIdentity = pairsIdentity[Type::inequalities];
+    std::cout << "Inequalities Identity vector size: " << ineqIdentity.size() << std::endl;
+    printComponents(ineqIdentity, "Inequalities A(kerneled)");
+
+    /* Gathering "Inequalities" */
+    ineqsResultingCone.reserve(ineqA.size() + ineqIdentity.size());
+    ineqsResultingCone.insert( ineqsResultingCone.end(), ineqA.begin(), ineqA.end() );
+    ineqsResultingCone.insert( ineqsResultingCone.end(), ineqIdentity.begin(), ineqIdentity.end() );
 
 
 
     Cone<Integer> resultingCone = Cone<Integer>(Type::equations, equationsResultingCone,
                                                 Type::inequalities, ineqsResultingCone);
+
+    /*
+    map< InputType , vector< vector<Integer> > > TypesResultingCone =
+                                                        resultingCone.getConstraints();
+
+    printComponents(TypesResultingCone[Type::inequalities], "Inequalities of Resulting Cone");
+    printComponents(TypesResultingCone[Type::equations], "Equations of Resulting Cone");
+     */
+
+    return resultingCone;
+
+}
+
+
+int main() {
+
+    MatrixXf A{10, 3};
+    //A << 0, 0, 1,   0, 1, 0,   1, 0, 0,   -1, 0, 0,    0, 0, -1,   0, -1, 0;
+    //A << 0, 0, 1,   0, 1, 0,   1, 0, 0,   -1, 0, 0,    0, 0, -1,   0, -1, 0;
+    A << 1, 0, 1 ,  1, 0, 0 ,  0, 1, 1 ,  0, 1, 0 ,  0, 0, 1 ,  -1, 0, 0 ,  0, 0, -1 ,  0, -1, 1 ,  0, -1, 0 ,  -1, 0, 1;
+
+    Cone<Integer> resultingCone = createU(A);
+
+    std::cout << "\n ~~ ~~ From now on main()-definitions are being run ~~ ~~" << std::endl;
 
     map< InputType , vector< vector<Integer> > > TypesResultingCone =
         resultingCone.getConstraints();
@@ -229,23 +209,7 @@ Cone<Integer> createU(MatrixXf A) {
     printComponents(TypesResultingCone[Type::equations], "Equations of Resulting Cone");
 
 
-    return resultingCone;
 
-}
-
-
-
-
-
-int main() {
-    MatrixXf A{6, 3};
-    A << 0, 0, 1, 0, 1, 0, 1, 0, 0, -1, 0, 0, 0, 0, -1, 0, -1, 0;
-
-    createU(A);
-
-
-
-    std::cout << "\n ~~ ~~ From now on main()-definitions are being run ~~ ~~" << std::endl;
 
     std::cout<< "CONE TEST\n";
 
