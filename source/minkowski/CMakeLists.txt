@@ -6,6 +6,8 @@ INCLUDE_DIRECTORIES(..)
 
 #Eigen library
 INCLUDE_DIRECTORIES(../external/eigen)
+INCLUDE_DIRECTORIES(../external)
+
 
 
 INCLUDE_DIRECTORIES(${GMP_INCLUDE_DIR})
@@ -13,7 +15,7 @@ INCLUDE_DIRECTORIES(${GMPXX_INCLUDE_DIR})
 
 
 
-ADD_EXECUTABLE (minkowski minkowski.cpp)
+ADD_EXECUTABLE (minkowski minkowski.cpp ../external/rref.hpp)
 
 IF (NMZ_BUILD_STATIC)
     TARGET_LINK_LIBRARIES (minkowski normaliz-static)

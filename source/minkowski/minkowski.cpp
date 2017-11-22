@@ -1,7 +1,9 @@
 #include <iostream>
 #include <vector>
 #include <libnormaliz/cone.h>
+#include <iomanip>
 #include "Eigen/Dense"
+#include "rref.hpp"
 
 using namespace Eigen;
 using std::vector;
@@ -10,12 +12,30 @@ using namespace libnormaliz;
 typedef long long Integer;
 
 
+void printComponents(const vector< vector<Integer> >& v, string type) {
+    std::string delim;
+    int index = 0;
+    for ( auto const& i : v ) {
+        delim = "";
+        std::cout << type << " Component-" << ++index << std::endl;
+        std::cout << "(";
+        for ( auto const& j : i ) {
+            std::cout << delim << j;
+            delim = ", ";
+        }
+        std::cout << ")" << std::endl;
+    }
+    std::cout << std::endl;
+}
+
+
 // Return a vector of basis elements of "self" as seperate matrices.
-vector<vector <Integer> > findGens(const MatrixXf& A) {
+template<typename T>
+vector<vector <T> > findGens(const MatrixXf& A) {
     vector<MatrixXf> transposedMatrices;
     long cols = A.cols();
     long rows = A.rows();
-    vector<vector <Integer> > v {static_cast<unsigned long>(rows), std::vector<Integer>(cols, 999999) };
+    vector<vector <T> > v {static_cast<unsigned long>(rows), std::vector<T>(cols, 999999) };
 
 
     /*
@@ -35,16 +55,20 @@ vector<vector <Integer> > findGens(const MatrixXf& A) {
         //std::cout << "Ray " << i + 1 << ": \n";
         for (size_t j = 0; j < cols; ++j) {
             //std::cout << transposedMatrices.at(i).coeff(j, 0) << std::endl;
-            v[i][j] = static_cast<long long>(transposedMatrices.at(i).coeff(j, 0));
+            v[i][j] = (transposedMatrices.at(i).coeff(j, 0));
         }
     }
 
-    for (size_t i = 0; i < rows; ++i) {
+    /*
+      for (size_t i = 0; i < rows; ++i) {
         std::cout << "Ray " << i + 1 << ": \n";
         for (size_t j = 0; j < cols; ++j) {
             std::cout << v.at(i).at(j) << std::endl;
         }
     }
+     */
+
+    //printComponents(v, "Ray");
 
     std::cout << std::endl;
 
@@ -58,21 +82,6 @@ void removeDuplicatePairs(std::vector<std::vector<Integer> >& v) {
     v.erase(std::unique(v.begin(), v.end()), v.end());
 }
 
-void printComponents(const vector< vector<Integer> >& v, string type) {
-    std::string delim;
-    int index = 0;
-    for ( auto const& i : v ) {
-        delim = "";
-        std::cout << type << " Component-" << ++index << std::endl;
-        std::cout << "(";
-        for ( auto const& j : i ) {
-            std::cout << delim << j;
-            delim = ", ";
-        }
-        std::cout << ")" << std::endl;
-    }
-    std::cout << std::endl;
-}
 
 Cone<Integer> createU(MatrixXf A) {
     //MatrixXf B = A;
@@ -88,16 +97,60 @@ Cone<Integer> createU(MatrixXf A) {
     A.transposeInPlace();
     std::cout << "and after being transposed:\n" << A << std::endl;
 
+
+    /*
+
+    MatrixXf B{test.size(), test.at(0).size()};
+
+    for ( const auto &row : test )
+    {
+        for ( const auto &s : row ) {
+            std::cout << s << '\t';
+        }
+        std::cout << std::endl;
+    }
+
+    for (int i = 0; i < test.size(); ++i) {
+        for (int j = 0; j < test.at(i).size(); ++j) {
+            B.row(i).coeffRef(j) = test.at(i).at(j);
+        }
+    }
+
+    */
+
+
+
+
+
+
     FullPivLU<MatrixXf> lu(A);
     MatrixXf A_null_space = lu.kernel();
     std::cout << "Null space:\n" << A_null_space << std::endl;
     A_null_space.transposeInPlace();
     std::cout << "Null space Transposed_A but different ouput from ZZ's:\n" << A_null_space;
 
+    std::cout << "soner test\n" << std::endl;
+
+    vector<vector <double> > test = findGens<double>(A_null_space);
+    to_reduced_row_echelon_form(test);
+
+    for ( const auto &row : test )
+    {
+        for ( const auto &s : row ) {
+            std::cout << s << '\t';
+        }
+        std::cout << std::endl;
+    }
+
+
+
+    std::cout << std::endl << std::endl;
+    std::cout << std::endl << std::endl;
+
 
     std::cout << "\n\nRays:" << std::endl;
     //vector<MatrixXf> argumentMatrixRays =
-    vector<vector <Integer> > argumentMatrixRays = findGens(A_null_space);
+    vector<vector <Integer> > argumentMatrixRays = findGens<Integer>(A_null_space);
     /* *** We have null spaced matrix from now on *** */
 
 
@@ -109,7 +162,7 @@ Cone<Integer> createU(MatrixXf A) {
 
     std::cout << "\nIdentity Matrix's Rays " << rowSize << " x " << rowSize << std::endl;
     //vector<MatrixXf> identityMatrixRays =
-    vector<vector <Integer> > identityMatrixRays = findGens(identity);
+    vector<vector <Integer> > identityMatrixRays = findGens<Integer>(identity);
 
 
     Type::InputType type = Type::cone;
@@ -179,6 +232,9 @@ Cone<Integer> createU(MatrixXf A) {
     Cone<Integer> resultingCone = Cone<Integer>(Type::equations, equationsResultingCone,
                                                 Type::inequalities, ineqsResultingCone);
 
+
+    std::cout << "Number of Excluded Faces: " << resultingCone.getNrDeg1Elements();
+
     /*
     map< InputType , vector< vector<Integer> > > TypesResultingCone =
                                                         resultingCone.getConstraints();
@@ -197,9 +253,50 @@ int main() {
     MatrixXf A{10, 3};
     //A << 0, 0, 1,   0, 1, 0,   1, 0, 0,   -1, 0, 0,    0, 0, -1,   0, -1, 0;
     //A << 0, 0, 1,   0, 1, 0,   1, 0, 0,   -1, 0, 0,    0, 0, -1,   0, -1, 0;
-    A << 1, 0, 1 ,  1, 0, 0 ,  0, 1, 1 ,  0, 1, 0 ,  0, 0, 1 ,  -1, 0, 0 ,  0, 0, -1 ,  0, -1, 1 ,  0, -1, 0 ,  -1, 0, 1;
 
-    Cone<Integer> resultingCone = createU(A);
+
+
+    A <<
+        1, 0, 1 ,
+        1, 0, 0 ,
+        0, 1, 1 ,
+        0, 1, 0 ,
+        0, 0, 1 ,
+        -1, 0, 0 ,
+        0, 0, -1 ,
+        0, -1, 1 ,
+        0, -1, 0 ,
+        -1, 0, 1;
+
+
+
+    /*
+    MatrixXf A{3, 3};
+    A << 1,2,-3,
+        2,-1,4,
+        4,3,-2;
+*/
+
+/*
+    A.transposeInPlace();
+    std::cout << "and after being transposed:\n" << A << std::endl;
+    FullPivLU<MatrixXf> lu(A);
+    MatrixXf A_null_space = lu.kernel();
+    std::cout << "Null space:\n" << A_null_space << std::endl;
+    A_null_space.transposeInPlace();
+    std::cout << "Null space Transposed_A but different ouput from ZZ's:\n" << A_null_space;
+*/
+    /*HouseholderQR<MatrixXf> qr(A);
+    cout << "soner \n" << qr.matrixQR().transpose();*/
+
+    /*HouseholderQR<MatrixXf> lux(A);
+    MatrixXf A_null_space = lux*/
+
+
+
+
+
+     Cone<Integer> resultingCone = createU(A);
 
     std::cout << "\n ~~ ~~ From now on main()-definitions are being run ~~ ~~" << std::endl;
 
@@ -212,7 +309,7 @@ int main() {
 
 
 
-    std::cout<< "CONE TEST\n";
+    std::cout<< "\n\nCONE TEST\n";
 
     /*
      vector<vector <Integer> > data =  { {1,1,1}, {2,2,2} };
