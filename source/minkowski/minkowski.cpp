@@ -133,16 +133,26 @@ Cone<Integer> createU(MatrixXf A) {
 
     vector<vector <double> > test = findGens<double>(A_null_space);
     to_reduced_row_echelon_form(test);
+    vector<vector <Integer> > intVec {test.size(), vector<Integer>(test.at(0).size(), 999999) };
 
-    for ( const auto &row : test )
-    {
+
+    for (int i = 0; i < test.size(); ++i) {
+        std::cerr << "size = " << i << std::endl;
+        for (int j = 0; j < test.at(i).size(); ++j) {
+            std::cerr << "j = " << j << std::endl;
+            intVec[i][j] = static_cast<Integer>(test.at(i).at(j));
+        }
+    }
+
+
+    for ( const auto &row : intVec ) {
         for ( const auto &s : row ) {
             std::cout << s << '\t';
         }
         std::cout << std::endl;
     }
 
-
+    std::cout << "soner test end\n" << std::endl;
 
     std::cout << std::endl << std::endl;
     std::cout << std::endl << std::endl;
@@ -150,7 +160,8 @@ Cone<Integer> createU(MatrixXf A) {
 
     std::cout << "\n\nRays:" << std::endl;
     //vector<MatrixXf> argumentMatrixRays =
-    vector<vector <Integer> > argumentMatrixRays = findGens<Integer>(A_null_space);
+    //vector<vector <Integer> > argumentMatrixRays = findGens<Integer>(A_null_space);
+    vector<vector <Integer> > argumentMatrixRays = intVec;
     /* *** We have null spaced matrix from now on *** */
 
 
