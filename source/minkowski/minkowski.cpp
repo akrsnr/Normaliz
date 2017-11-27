@@ -9,10 +9,12 @@ using namespace Eigen;
 using std::vector;
 using namespace libnormaliz;
 
+const int INITIAL_VALUE = 999999;
+
 typedef long long Integer;
 
 
-void printComponents(const vector< vector<Integer> >& v, string type, bool onlyVector = false) {
+void printComponents(const vector< vector<Integer> >& v, const string &type, bool onlyVector = false) {
     std::string delim;
     int index = 0;
     for ( auto const& i : v ) {
@@ -38,7 +40,7 @@ vector<vector <T> > eigenTOvector(const MatrixXf &A) {
     vector<MatrixXf> transposedMatrices;
     long cols = A.cols();
     long rows = A.rows();
-    vector<vector <T> > v {static_cast<unsigned long>(rows), std::vector<T>(cols, 999999) };
+    vector<vector <T> > v {static_cast<unsigned long>(rows), std::vector<T>(cols, INITIAL_VALUE) };
 
     for (size_t i = 0; i < rows; ++i) {
         transposedMatrices.emplace_back(const_cast<MatrixXf&>(A).row(i).transpose());
@@ -57,11 +59,11 @@ vector<vector <T> > eigenTOvector(const MatrixXf &A) {
 
 
 vector<vector <Integer> > fromRREFtoVectorInteger(const vector<vector <double> >& v ) {
-    vector<vector <Integer> > intVec {v.size(), vector<Integer>(v.at(0).size(), 999999) };
+    vector<vector <Integer> > intVec {v.size(), vector<Integer>(v.at(0).size(), INITIAL_VALUE) };
 
     for (int i = 0; i < v.size(); ++i) {
         for (int j = 0; j < v.at(i).size(); ++j) {
-            intVec[i][j] = static_cast<Integer>(v.at(i).at(j));
+            intVec[i][j] = v.at(i).at(j);
         }
     }
     return  intVec;
@@ -72,27 +74,16 @@ Cone<Integer> createU(MatrixXf A) {
     long columnSize = A.cols();
     long rowSize = A.rows();
 
-    std::cout << "Here is the initial matrix m:\n" << A << std::endl;
-
-    std::cout << "The matrix m is of size "
-              << columnSize << "x" << rowSize << std::endl;
-    std::cout << "It has " << A.size() << " coefficients" << std::endl;
-
+    /* Irregular-ordered right kernel calculation */
     A.transposeInPlace();
-    std::cout << "and after being transposed:\n" << A << std::endl;
-
     FullPivLU<MatrixXf> lu(A);
     MatrixXf A_null_space = lu.kernel();
-    std::cout << "Null space:\n" << A_null_space << std::endl;
     A_null_space.transposeInPlace();
-    std::cout << "Null space Transposed_A but different ouput from ZZ's:\n" << A_null_space;
 
-    std::cout << "\n\nsoner test" << std::endl;
-
+    /* Row reduce echelon form to make it regular */
     vector<vector <double> > rref = eigenTOvector<double>(A_null_space);
     to_reduced_row_echelon_form(rref);
     vector<vector <Integer> > intVecA = fromRREFtoVectorInteger(rref);
-
 
 
     for ( const auto &row : intVecA ) {
@@ -102,15 +93,9 @@ Cone<Integer> createU(MatrixXf A) {
         std::cout << std::endl;
     }
 
-    std::cout << "soner test end\n" << std::endl;
 
-    std::cout << std::endl << std::endl;
-    std::cout << std::endl << std::endl;
-
-
-    std::cout << "\n\nRays:" << std::endl;
     const vector<vector <Integer> >& argumentMatrixRays = intVecA;
-    /* *** We have null spaced matrix from now on *** */
+    /* *** We have null spaced and rref'ed matrix from now on *** */
 
 
     std::cout << "\nIdentity Matrix " << rowSize << " x " << rowSize << std::endl;
@@ -119,12 +104,8 @@ Cone<Integer> createU(MatrixXf A) {
     std::cout << identity << std::endl;
 
 
-
     std::cout << "\nIdentity Matrix's Rays " << rowSize << " x " << rowSize << std::endl;
-    //vector<MatrixXf> identityMatrixRays =
     const vector<vector <Integer> >& identityMatrixRays = eigenTOvector<Integer>(identity);
-    //printComponents(identityMatrixRays, "Identity Test", true);
-
 
     Type::InputType type = Type::cone;
     Cone<Integer> coneMatrixA = Cone<Integer>(type, argumentMatrixRays);
@@ -172,9 +153,6 @@ Cone<Integer> createU(MatrixXf A) {
     equationsResultingCone.insert( equationsResultingCone.end(), equationsA.begin(), equationsA.end() );
     equationsResultingCone.insert( equationsResultingCone.end(), equationsIdentity.begin(), equationsIdentity.end() );
 
-    //printComponents(equationsResultingCone, "equationsResultingCone", true);
-
-
     /* Inequalities Matrix A(kerneled) */
     const vector< vector<Integer> >& ineqA = pairsA[Type::inequalities];
     std::cout << "Inequalities A(kerneled) vector size: " << ineqA.size() << std::endl;
@@ -198,14 +176,6 @@ Cone<Integer> createU(MatrixXf A) {
 
 
     std::cout << "Number of Excluded Faces: " << resultingCone.getNrDeg1Elements();
-
-    /*
-    map< InputType , vector< vector<Integer> > > TypesResultingCone =
-                                                        resultingCone.getConstraints();
-
-    printComponents(TypesResultingCone[Type::inequalities], "Inequalities of Resulting Cone");
-    printComponents(TypesResultingCone[Type::equations], "Equations of Resulting Cone");
-     */
 
     return resultingCone;
 
