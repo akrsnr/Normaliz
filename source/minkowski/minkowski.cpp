@@ -9,9 +9,10 @@ using namespace Eigen;
 using std::vector;
 using namespace libnormaliz;
 
-const int INITIAL_VALUE = 999999;
-
 typedef long long Integer;
+
+
+const int INITIAL_VALUE = 999999;
 
 
 void printComponents(const vector< vector<Integer> >& v, const string &type, bool onlyVector = false) {
@@ -85,7 +86,7 @@ Cone<Integer> createU(MatrixXf A) {
     to_reduced_row_echelon_form(rref);
     vector<vector <Integer> > intVecA = fromRREFtoVectorInteger(rref);
 
-
+    std::cout << "RREF form of kernel\n";
     for ( const auto &row : intVecA ) {
         for ( const auto &s : row ) {
             std::cout << s << '\t';
@@ -104,7 +105,6 @@ Cone<Integer> createU(MatrixXf A) {
     std::cout << identity << std::endl;
 
 
-    std::cout << "\nIdentity Matrix's Rays " << rowSize << " x " << rowSize << std::endl;
     const vector<vector <Integer> >& identityMatrixRays = eigenTOvector<Integer>(identity);
 
     Type::InputType type = Type::cone;
@@ -119,7 +119,7 @@ Cone<Integer> createU(MatrixXf A) {
     vector< vector<Integer> > ineqsResultingCone;
     vector< vector<Integer> > equationsResultingCone;
 
-    /* Pairs A(kerneled)
+    /* Pairs of A(kerneled), argument, Matrix
      *
        Type::inequalities
        Type::equations
@@ -128,7 +128,7 @@ Cone<Integer> createU(MatrixXf A) {
     map< InputType , vector< vector<Integer> > > pairsA =
         coneMatrixA.getConstraints();
 
-    /* Pairs Identity
+    /* Pairs of Identity Matrix
      *
        Type::inequalities
        Type::equations
@@ -170,12 +170,9 @@ Cone<Integer> createU(MatrixXf A) {
     ineqsResultingCone.insert( ineqsResultingCone.end(), ineqIdentity.begin(), ineqIdentity.end() );
 
 
-
     Cone<Integer> resultingCone = Cone<Integer>(Type::equations, equationsResultingCone,
                                                 Type::inequalities, ineqsResultingCone);
 
-
-    std::cout << "Number of Excluded Faces: " << resultingCone.getNrDeg1Elements();
 
     return resultingCone;
 
