@@ -64,7 +64,7 @@ vector<vector <Integer> > fromRREFtoVectorInteger(const vector<vector <double> >
 
     for (int i = 0; i < v.size(); ++i) {
         for (int j = 0; j < v.at(i).size(); ++j) {
-            intVec[i][j] = v.at(i).at(j);
+            intVec[i][j] = static_cast<Integer >( v.at(i).at(j) );
         }
     }
     return  intVec;
@@ -95,7 +95,7 @@ Cone<Integer> createU(MatrixXf A) {
     }
 
 
-    const vector<vector <Integer> >& argumentMatrixRays = intVecA;
+    const vector<vector <Integer> >& matrixAInequalities = intVecA;
     /* *** We have null spaced and rref'ed matrix from now on *** */
 
 
@@ -108,8 +108,17 @@ Cone<Integer> createU(MatrixXf A) {
     const vector<vector <Integer> >& identityMatrixRays = eigenTOvector<Integer>(identity);
 
     Type::InputType type = Type::cone;
-    Cone<Integer> coneMatrixA = Cone<Integer>(type, argumentMatrixRays);
+    Cone<Integer> coneMatrixA = Cone<Integer>(type, matrixAInequalities);
     Cone<Integer> coneIdentity = Cone<Integer>(type, identityMatrixRays);
+
+/*
+    coneIdentity.compute(ConeProperty::Generators);
+    bool done = coneIdentity.isComputed(ConeProperty::Generators);
+    std::cout << "Done: " << done << std::endl;
+    const vector<vector <Integer> >& gens = coneIdentity.getGenerators();
+    std::cout << "num: " << coneIdentity.getNrGenerators();
+    printComponents(gens, "Generators Identity");
+  */
 
     /* OMITTED FOR NOW */
     const vector< vector<Integer> >& supportHyperPlanesA = coneMatrixA.getSupportHyperplanes();
@@ -140,13 +149,13 @@ Cone<Integer> createU(MatrixXf A) {
 
     /* Equations Matrix A(kerneled) */
     const vector< vector<Integer> >& equationsA = pairsA[Type::equations];
-    std::cout << "Equations A(kerneled) vector size: " << equationsA.size() << std::endl;
-    printComponents(equationsA, "Equations A(kerneled)");
+    //std::cout << "Equations A(kerneled) vector size: " << equationsA.size() << std::endl;
+    //printComponents(equationsA, "Equations A(kerneled)");
 
     /* Equations identity */
     const vector< vector<Integer> >& equationsIdentity = pairsIdentity[Type::equations];
-    std::cout << "Equations Identity vector size: " << equationsIdentity.size() << std::endl;
-    printComponents(equationsIdentity, "Equations Identity");
+    //std::cout << "Equations Identity vector size: " << equationsIdentity.size() << std::endl;
+    //printComponents(equationsIdentity, "Equations Identity");
 
     /* Gathering "Equations" */
     equationsResultingCone.reserve(equationsA.size() + equationsIdentity.size());
@@ -155,14 +164,14 @@ Cone<Integer> createU(MatrixXf A) {
 
     /* Inequalities Matrix A(kerneled) */
     const vector< vector<Integer> >& ineqA = pairsA[Type::inequalities];
-    std::cout << "Inequalities A(kerneled) vector size: " << ineqA.size() << std::endl;
-    printComponents(ineqA, "Inequalities A(kerneled)");
+    //std::cout << "Inequalities A(kerneled) vector size: " << ineqA.size() << std::endl;
+    //printComponents(ineqA, "-test-Inequalities A(kerneled)", true);
 
 
     /* Inequalities identity */
     const vector< vector<Integer> >& ineqIdentity = pairsIdentity[Type::inequalities];
-    std::cout << "Inequalities Identity vector size: " << ineqIdentity.size() << std::endl;
-    printComponents(ineqIdentity, "Inequalities A(kerneled)");
+    //std::cout << "Inequalities Identity vector size: " << ineqIdentity.size() << std::endl;
+    //printComponents(ineqIdentity, "Inequalities A(kerneled)");
 
     /* Gathering "Inequalities" */
     ineqsResultingCone.reserve(ineqA.size() + ineqIdentity.size());
@@ -172,6 +181,21 @@ Cone<Integer> createU(MatrixXf A) {
 
     Cone<Integer> resultingCone = Cone<Integer>(Type::equations, equationsResultingCone,
                                                 Type::inequalities, ineqsResultingCone);
+
+    resultingCone.compute(ConeProperty::Generators);
+    bool done = coneIdentity.isComputed(ConeProperty::Generators);
+    const vector<vector <Integer> >& gens = resultingCone.getGenerators();
+
+    /*
+     * Here, I find generators of intersected(resulting) cone.
+     * The generators are used to recreate a cone as inequalities
+     */
+    Cone<Integer> reCreatebyGenerators = Cone<Integer>(Type::inequalities, gens);
+    reCreatebyGenerators.compute(ConeProperty::Generators);
+    bool done2 = coneIdentity.isComputed(ConeProperty::Generators);
+    const vector<vector <Integer> >& gens2 = resultingCone.getGenerators();
+    printComponents(gens2, "Final", true);
+
 
 
     return resultingCone;
