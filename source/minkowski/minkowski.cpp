@@ -111,15 +111,6 @@ Cone<Integer> createU(MatrixXf A) {
     Cone<Integer> coneMatrixA = Cone<Integer>(type, matrixAInequalities);
     Cone<Integer> coneIdentity = Cone<Integer>(type, identityMatrixRays);
 
-/*
-    coneIdentity.compute(ConeProperty::Generators);
-    bool done = coneIdentity.isComputed(ConeProperty::Generators);
-    std::cout << "Done: " << done << std::endl;
-    const vector<vector <Integer> >& gens = coneIdentity.getGenerators();
-    std::cout << "num: " << coneIdentity.getNrGenerators();
-    printComponents(gens, "Generators Identity");
-  */
-
     /* OMITTED FOR NOW */
     const vector< vector<Integer> >& supportHyperPlanesA = coneMatrixA.getSupportHyperplanes();
     const vector< vector<Integer> >& supportHyperPlanesIdentity = coneIdentity.getSupportHyperplanes();
@@ -182,19 +173,26 @@ Cone<Integer> createU(MatrixXf A) {
     Cone<Integer> resultingCone = Cone<Integer>(Type::equations, equationsResultingCone,
                                                 Type::inequalities, ineqsResultingCone);
 
-    resultingCone.compute(ConeProperty::Generators);
-    bool done = coneIdentity.isComputed(ConeProperty::Generators);
-    const vector<vector <Integer> >& gens = resultingCone.getGenerators();
+    /* AFTER TUESDAY, 28th MEETING */
 
     /*
      * Here, I find generators of intersected(resulting) cone.
-     * The generators are used to recreate a cone as inequalities
+     */
+    resultingCone.compute(ConeProperty::Generators);
+    const vector<vector <Integer> >& gens = resultingCone.getGenerators();
+
+    /*
+     * ************* Documentation says **************************
+     * Unless you are interested a single result, we recommend
+     * to use compute since the data asked for can then be computed in a single run.
+     * ***********************************************************
+     * Here, I use the generators of intersected(resulting) cone to create a cone anew.
+     * Frankly, the generators are used to recreate a cone as inequalities
      */
     Cone<Integer> reCreatebyGenerators = Cone<Integer>(Type::inequalities, gens);
-    reCreatebyGenerators.compute(ConeProperty::Generators);
-    bool done2 = coneIdentity.isComputed(ConeProperty::Generators);
-    const vector<vector <Integer> >& gens2 = resultingCone.getGenerators();
-    printComponents(gens2, "Final", true);
+    //reCreatebyGenerators.compute(ConeProperty::Generators);
+    const vector<vector <Integer> >& gens2 = reCreatebyGenerators.getGenerators();
+    printComponents(gens2, "Recreated cone's Generators", true);
 
 
 
