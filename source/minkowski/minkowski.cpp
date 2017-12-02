@@ -203,12 +203,13 @@ Cone<Integer> createU(MatrixXf A) {
 
 int main() {
 
-    MatrixXf A{10, 3};
+
     //A << 0, 0, 1,   0, 1, 0,   1, 0, 0,   -1, 0, 0,    0, 0, -1,   0, -1, 0;
     //A << 0, 0, 1,   0, 1, 0,   1, 0, 0,   -1, 0, 0,    0, 0, -1,   0, -1, 0;
 
 
-
+//pdf
+    /*MatrixXf A{10, 3};
     A <<
         1, 0, 1 ,
         1, 0, 0 ,
@@ -220,7 +221,7 @@ int main() {
         0, -1, 1 ,
         0, -1, 0 ,
         -1, 0, 1;
-
+*/
 
 
     /*
@@ -229,17 +230,32 @@ int main() {
         2,-1,4,
         4,3,-2;
 */
+    /*
+    // CUBE
+    MatrixXf A{6,3};
+    A << 0, 0, 1,   0, 1, 0,   1, 0, 0,   -1, 0, 0,    0, 0, -1,   0, -1, 0;
+     */
+
+    /*
+    //cross_polytope(2)
+    MatrixXf A{4,2};
+    A << -1, -1, -1, 1, 1, 1, 1, -1;
+     */
+
+    MatrixXf A{8,3};
+    A << 	-1, 1, 1, -1, -1, 1, -1, -1, -1, -1, 1, -1, 1, 1, -1, 1, 1,
+        1, 1, -1, 1, 1, -1, -1;
 
 
-     Cone<Integer> resultingCone = createU(A);
+    Cone<Integer> resultingCone = createU(A);
 
     std::cout << "\n\n\n\n ~~ ~~ From now on main()-definitions are being run ~~ ~~" << std::endl;
 
     map< InputType , vector< vector<Integer> > > TypesResultingCone =
         resultingCone.getConstraints();
 
-    printComponents(TypesResultingCone[Type::inequalities], "Inequalities of Resulting Cone", true);
-    printComponents(TypesResultingCone[Type::equations], "Equations of Resulting Cone", true);
+    printComponents(TypesResultingCone[Type::inequalities], "Inequalities of Intersected resulting Cone", true);
+    printComponents(TypesResultingCone[Type::equations], "Equations of Intersected resulting Cone", true);
 
 
 
