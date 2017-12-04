@@ -18,20 +18,25 @@ const int INITIAL_VALUE = 999999;
 void printComponents(const vector< vector<Integer> >& v, const string &type, bool onlyVector = false) {
     std::string delim;
     int index = 0;
+    std::cout << type;
     for ( auto const& i : v ) {
         delim = "";
-        if (onlyVector)
-            std::cout << type << " Component-" << ++index << std::endl;
+        /*if (onlyVector) {
+            //std::cout << type << " Component-" << ++index << std::endl;
+            //onlyVector = false;
+        }*/
+        std::cout << "\n";
         std::cout << "(";
         for ( auto const& j : i ) {
             std::cout << delim << j;
             delim = ", ";
         }
         std::cout << "),   ";
-        if (onlyVector)
+        /*if (onlyVector) {
             std::cout << std::endl;
+        }*/
     }
-    std::cout << std::endl;
+    std::cout << "\n\n";
 }
 
 
@@ -209,7 +214,7 @@ int main() {
 
 
 //pdf
-    /*MatrixXf A{10, 3};
+    MatrixXf A{11, 3};
     A <<
         1, 0, 1 ,
         1, 0, 0 ,
@@ -220,8 +225,9 @@ int main() {
         0, 0, -1 ,
         0, -1, 1 ,
         0, -1, 0 ,
-        -1, 0, 1;
-*/
+        -1, 0, 1,
+        -1,0,-1;
+
 
 
     /*
@@ -242,9 +248,9 @@ int main() {
     A << -1, -1, -1, 1, 1, 1, 1, -1;
      */
 
-    MatrixXf A{8,3};
+    /*MatrixXf A{8,3};
     A << 	-1, 1, 1, -1, -1, 1, -1, -1, -1, -1, 1, -1, 1, 1, -1, 1, 1,
-        1, 1, -1, 1, 1, -1, -1;
+        1, 1, -1, 1, 1, -1, -1;*/
 
 
     Cone<Integer> resultingCone = createU(A);
