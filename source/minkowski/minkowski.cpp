@@ -15,16 +15,12 @@ typedef long long Integer;
 const int INITIAL_VALUE = 999999;
 
 
-void printComponents(const vector< vector<Integer> >& v, const string &type, bool onlyVector = false) {
+void printComponents(const vector< vector<Integer> >& v, const string &type) {
     std::string delim;
     int index = 0;
     std::cout << type;
     for ( auto const& i : v ) {
         delim = "";
-        /*if (onlyVector) {
-            //std::cout << type << " Component-" << ++index << std::endl;
-            //onlyVector = false;
-        }*/
         std::cout << "\n";
         std::cout << "(";
         for ( auto const& j : i ) {
@@ -32,9 +28,6 @@ void printComponents(const vector< vector<Integer> >& v, const string &type, boo
             delim = ", ";
         }
         std::cout << "),   ";
-        /*if (onlyVector) {
-            std::cout << std::endl;
-        }*/
     }
     std::cout << "\n\n";
 }
@@ -197,7 +190,7 @@ Cone<Integer> createU(MatrixXf A) {
     Cone<Integer> reCreatebyGenerators = Cone<Integer>(Type::inequalities, gens);
     //reCreatebyGenerators.compute(ConeProperty::Generators);
     const vector<vector <Integer> >& gens2 = reCreatebyGenerators.getGenerators();
-    printComponents(gens2, "Recreated cone's Generators", true);
+    printComponents(gens2, "Recreated cone's Generators");
 
 
 
@@ -260,8 +253,8 @@ int main() {
     map< InputType , vector< vector<Integer> > > TypesResultingCone =
         resultingCone.getConstraints();
 
-    printComponents(TypesResultingCone[Type::inequalities], "Inequalities of Intersected resulting Cone", true);
-    printComponents(TypesResultingCone[Type::equations], "Equations of Intersected resulting Cone", true);
+    printComponents(TypesResultingCone[Type::inequalities], "Inequalities of Intersected resulting Cone");
+    printComponents(TypesResultingCone[Type::equations], "Equations of Intersected resulting Cone");
 
 
 
