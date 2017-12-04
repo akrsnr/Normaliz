@@ -65,6 +65,7 @@ vector<vector <Integer> > fromRREFtoVectorInteger(const vector<vector <double> >
             intVec[i][j] = static_cast<Integer >( v.at(i).at(j) );
         }
     }
+
     return  intVec;
 }
 
@@ -78,6 +79,7 @@ Cone<Integer> createU(MatrixXf A) {
     FullPivLU<MatrixXf> lu(A);
     MatrixXf A_null_space = lu.kernel();
     A_null_space.transposeInPlace();
+    std::cout << "kerneled\n" << A_null_space << std::endl;
 
     /* Row reduce echelon form to make it regular */
     vector<vector <double> > rref = eigenTOvector<double>(A_null_space);
@@ -87,7 +89,7 @@ Cone<Integer> createU(MatrixXf A) {
     std::cout << "RREF form of kernel\n";
     for ( const auto &row : intVecA ) {
         for ( const auto &s : row ) {
-            std::cout << s << '\t';
+            std::cout << s << "  ";
         }
         std::cout << std::endl;
     }
@@ -135,38 +137,49 @@ Cone<Integer> createU(MatrixXf A) {
     map< InputType , vector< vector<Integer> > > pairsIdentity =
         coneIdentity.getConstraints();
 
+    /*    -------   NULL-SPACED MATRIX EQUATIONS and INEQUALITIES    -------   */
 
     /* Equations Matrix A(kerneled) */
     const vector< vector<Integer> >& equationsA = pairsA[Type::equations];
-    //std::cout << "Equations A(kerneled) vector size: " << equationsA.size() << std::endl;
-    //printComponents(equationsA, "Equations A(kerneled)");
+    std::cout << "Equations A(kerneled) vector size: " << equationsA.size();
+    printComponents(equationsA, "");
+
+    /* Inequalities Matrix A(kerneled) */
+    const vector< vector<Integer> >& ineqA = pairsA[Type::inequalities];
+    std::cout << "Inequalities A(kerneled) vector size: " << ineqA.size();
+    printComponents(ineqA, "");
+
+    /*    -------   IDENTITY MATRIX EQUATIONS and INEQUALITIES    -------   */
 
     /* Equations identity */
     const vector< vector<Integer> >& equationsIdentity = pairsIdentity[Type::equations];
-    //std::cout << "Equations Identity vector size: " << equationsIdentity.size() << std::endl;
-    //printComponents(equationsIdentity, "Equations Identity");
+    std::cout << "Equations Identity vector size: " << equationsIdentity.size();
+    printComponents(equationsIdentity, "");
+
+
+    /* Inequalities identity */
+    const vector< vector<Integer> >& ineqIdentity = pairsIdentity[Type::inequalities];
+    std::cout << "Inequalities Identity vector size: " << ineqIdentity.size();
+    printComponents(ineqIdentity, "");
+
+    /*    -------   COMBINE ALL OBTAINED EQUATIONS and INEQUALITIES    -------   */
 
     /* Gathering "Equations" */
     equationsResultingCone.reserve(equationsA.size() + equationsIdentity.size());
     equationsResultingCone.insert( equationsResultingCone.end(), equationsA.begin(), equationsA.end() );
     equationsResultingCone.insert( equationsResultingCone.end(), equationsIdentity.begin(), equationsIdentity.end() );
+    printComponents(equationsResultingCone, "All equations");
 
-    /* Inequalities Matrix A(kerneled) */
-    const vector< vector<Integer> >& ineqA = pairsA[Type::inequalities];
-    //std::cout << "Inequalities A(kerneled) vector size: " << ineqA.size() << std::endl;
-    //printComponents(ineqA, "-test-Inequalities A(kerneled)", true);
-
-
-    /* Inequalities identity */
-    const vector< vector<Integer> >& ineqIdentity = pairsIdentity[Type::inequalities];
-    //std::cout << "Inequalities Identity vector size: " << ineqIdentity.size() << std::endl;
-    //printComponents(ineqIdentity, "Inequalities A(kerneled)");
 
     /* Gathering "Inequalities" */
     ineqsResultingCone.reserve(ineqA.size() + ineqIdentity.size());
     ineqsResultingCone.insert( ineqsResultingCone.end(), ineqA.begin(), ineqA.end() );
     ineqsResultingCone.insert( ineqsResultingCone.end(), ineqIdentity.begin(), ineqIdentity.end() );
+    printComponents(ineqsResultingCone, "All inequalities");
 
+
+    /*                                   INTERSECTION                                       */
+    /*    -------   CREATE A NEW CONE FROM COMBINED EQUATIONS and INEQUALITIES    -------   */
 
     Cone<Integer> resultingCone = Cone<Integer>(Type::equations, equationsResultingCone,
                                                 Type::inequalities, ineqsResultingCone);
@@ -229,23 +242,49 @@ int main() {
         2,-1,4,
         4,3,-2;
 */
-    /*
-    // CUBE
+
+    /*// CUBE
     MatrixXf A{6,3};
     A << 0, 0, 1,   0, 1, 0,   1, 0, 0,   -1, 0, 0,    0, 0, -1,   0, -1, 0;
-     */
+    */
+
+
+    /*//cross_polytope(2)
+    MatrixXf A{4,2};
+    A << -1, -1, -1, 1, 1, 1, 1, -1;*/
 
     /*
-    //cross_polytope(2)
-    MatrixXf A{4,2};
-    A << -1, -1, -1, 1, 1, 1, 1, -1;
-     */
+     //cross_polytope(3)
+    MatrixXf A{8,3};
+    A << 	-1, 1, 1,
+            -1, -1, 1,
+            -1, -1, -1,
+            -1, 1, -1,
+             1, 1, -1,
+             1, 1, 1,
+             1, -1, 1,
+             1, -1, -1;
+        */
 
-    /*MatrixXf A{8,3};
-    A << 	-1, 1, 1, -1, -1, 1, -1, -1, -1, -1, 1, -1, 1, 1, -1, 1, 1,
-        1, 1, -1, 1, 1, -1, -1;*/
+    /*
+     //cuboctahedron()
 
-
+    MatrixXf A{14,3};
+    A << 0, 1, 0,
+        1, 0, 0,
+        -1, -1, 1,
+        -1, 0, 0,
+        -1, 1, 1,
+        0, -1, 0,
+        -1, 1, -1,
+        0, 0, 1,
+        0, 0, -1,
+        1, -1, -1,
+        -1, -1, -1,
+        1, -1, 1,
+        1, 1, -1,
+        1, 1, 1;
+    */
     Cone<Integer> resultingCone = createU(A);
 
     std::cout << "\n\n\n\n ~~ ~~ From now on main()-definitions are being run ~~ ~~" << std::endl;
@@ -253,9 +292,8 @@ int main() {
     map< InputType , vector< vector<Integer> > > TypesResultingCone =
         resultingCone.getConstraints();
 
-    printComponents(TypesResultingCone[Type::inequalities], "Inequalities of Intersected resulting Cone");
     printComponents(TypesResultingCone[Type::equations], "Equations of Intersected resulting Cone");
-
+    printComponents(TypesResultingCone[Type::inequalities], "Inequalities of Intersected resulting Cone");
 
 
 
