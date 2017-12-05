@@ -5,6 +5,10 @@
 #include "Eigen/Dense"
 #include "rref.hpp"
 
+#include <flint/fmpzxx.h>
+#include "fmpz.h"
+#include "fmpz_mat.h"
+
 using namespace Eigen;
 using std::vector;
 using namespace libnormaliz;
@@ -13,7 +17,6 @@ typedef long long Integer;
 
 
 const int INITIAL_VALUE = 999999;
-
 
 void printComponents(const vector< vector<Integer> >& v, const string &type) {
     std::string delim;
@@ -84,18 +87,68 @@ Cone<Integer> createU(MatrixXf A) {
     /* Row reduce echelon form to make it regular */
     vector<vector <double> > rref = eigenTOvector<double>(A_null_space);
     to_reduced_row_echelon_form(rref);
-    vector<vector <Integer> > intVecA = fromRREFtoVectorInteger(rref);
-
-    std::cout << "RREF form of kernel\n";
-    for ( const auto &row : intVecA ) {
+    std::cout << "RREF before cast\n";
+    for ( const auto &row : rref ) {
         for ( const auto &s : row ) {
             std::cout << s << "  ";
         }
         std::cout << std::endl;
     }
 
+    vector<vector <Integer> > intVec {rref.size(), vector<Integer>(rref.at(0).size(), INITIAL_VALUE) };
+    for (int i = 0; i < rref.size(); ++i) {
+        for (int j = 0; j < rref.at(i).size(); ++j) {
+            intVec[i][j] = 2*rref[i][j];
+        }
+    }
+/*
+    std::cout << "RREF form of kernel\n";
+    for ( const auto &row : intVec ) {
+        for ( const auto &s : row ) {
+            std::cout << s << "  ";
+        }
+        std::cout << std::endl;
+    }*/
 
-    const vector<vector <Integer> >& matrixAInequalities = intVecA;
+
+
+
+    int row_null = rref.size();
+    int col_null = rref.at(0).size();
+
+    int count = 0;
+    fmpz_mat_t M;
+    fmpz_mat_t M_h;
+    fmpz_mat_init(M, row_null,col_null);
+    fmpz_mat_init(M_h, col_null,col_null);
+
+    fmpz_mat_t M_rref;
+
+
+
+    for (int i = 0; i < row_null; i++) {
+        for (int j = 0; j < col_null; j++) {
+            fmpz_set_d(fmpz_mat_entry(M, i, j), rref.at(i).at(j));
+        }
+    }
+    flint_printf(" M = \n");
+    fmpz_mat_print_pretty(M);
+
+
+    fmpz_mat_hnf(M_h, M);
+    flint_printf(" \n\nHermit = \n\n\n");
+    fmpz_mat_print_pretty(M_h);
+
+
+    fmpz_mat_clear(M);
+    fmpz_mat_clear(M_h);
+
+
+    //vector<vector <Integer> > intVecA = fromRREFtoVectorInteger(rref);
+
+
+
+    const vector<vector <Integer> >& matrixAInequalities = intVec;
     /* *** We have null spaced and rref'ed matrix from now on *** */
 
 
@@ -220,9 +273,9 @@ int main() {
 
 
 //pdf
-    MatrixXf A{11, 3};
+    MatrixXf A{10, 3};
     A <<
-        1, 0, 1 ,
+      1, 0, 1 ,
         1, 0, 0 ,
         0, 1, 1 ,
         0, 1, 0 ,
@@ -231,30 +284,23 @@ int main() {
         0, 0, -1 ,
         0, -1, 1 ,
         0, -1, 0 ,
-        -1, 0, 1,
-        -1,0,-1;
+        -1, 0, 1;
 
 
-
-    /*
-    MatrixXf A{3, 3};
-    A << 1,2,-3,
-        2,-1,4,
-        4,3,-2;
-*/
-
-    /*// CUBE
+/*
+    // CUBE
     MatrixXf A{6,3};
     A << 0, 0, 1,   0, 1, 0,   1, 0, 0,   -1, 0, 0,    0, 0, -1,   0, -1, 0;
-    */
+*/
 
 
     /*//cross_polytope(2)
     MatrixXf A{4,2};
     A << -1, -1, -1, 1, 1, 1, 1, -1;*/
 
-    /*
-     //cross_polytope(3)
+
+     /*
+      //cross_polytope(3)
     MatrixXf A{8,3};
     A << 	-1, 1, 1,
             -1, -1, 1,
@@ -264,11 +310,11 @@ int main() {
              1, 1, 1,
              1, -1, 1,
              1, -1, -1;
-        */
 
-    /*
+*/
+
      //cuboctahedron()
-
+/*
     MatrixXf A{14,3};
     A << 0, 1, 0,
         1, 0, 0,
@@ -284,8 +330,8 @@ int main() {
         1, -1, 1,
         1, 1, -1,
         1, 1, 1;
-    */
-    Cone<Integer> resultingCone = createU(A);
+*/
+    /*Cone<Integer> resultingCone = createU(A);
 
     std::cout << "\n\n\n\n ~~ ~~ From now on main()-definitions are being run ~~ ~~" << std::endl;
 
@@ -294,6 +340,64 @@ int main() {
 
     printComponents(TypesResultingCone[Type::equations], "Equations of Intersected resulting Cone");
     printComponents(TypesResultingCone[Type::inequalities], "Inequalities of Intersected resulting Cone");
+*/
+
+    MatrixXf B = A;
+    //B.transposeInPlace();
+    vector< vector< Integer> > rref = eigenTOvector<Integer>(B);
+    int row_null = rref.size();
+    int col_null = rref.at(0).size();
+
+    int count = 0;
+    fmpz_mat_t M;
+    fmpz_mat_t M_null;
+    fmpz_mat_init(M, row_null,col_null);
+    fmpz_mat_init(M_null, col_null,col_null);
+    fmpz_mat_t M_null_transpose;
+    fmpz_mat_init(M_null_transpose, col_null,col_null);
+    fmpz_mat_t M_hermit;
+    fmpz_mat_init(M_hermit, col_null,col_null);
+
+
+
+
+
+
+
+    for (int i = 0; i < row_null; i++) {
+        for (int j = 0; j < col_null; j++) {
+            std::cout << rref.at(i).at(j) << "  ";
+            fmpz_set_si(fmpz_mat_entry(M, i, j), rref.at(i).at(j));
+        }
+        std::cout << "\n";
+    }
+    flint_printf(" M = \n");
+    fmpz_mat_print_pretty(M);
+
+
+    int x = fmpz_mat_nullspace(M_null, M);
+    std::cout << "dimension = " << x << std::endl;
+    flint_printf(" \nNull space = \n\n");
+    fmpz_mat_print_pretty(M_null);
+
+    fmpz_mat_transpose(M_null_transpose, M_null);
+    flint_printf(" \nNull space transpose = \n\n");
+    fmpz_mat_print_pretty(M_null_transpose);
+
+    fmpz_mat_hnf(M_hermit, M_null_transpose);
+    flint_printf(" \nHermit Form = \n\n");
+    fmpz_mat_print_pretty(M_hermit);
+
+
+
+
+
+
+    fmpz_mat_clear(M);
+    fmpz_mat_clear(M_null);
+    fmpz_mat_clear(M_hermit);
+    fmpz_mat_clear(M_null_transpose);
+
 
 
 
@@ -309,13 +413,13 @@ int main() {
     Cone<Integer> MyCone = Cone<Integer>(type, data);
      */
 
-   /* std::cout<< "CONE TEST END\n";
+    /* std::cout<< "CONE TEST END\n";
 
-    MatrixXf b{6, 1};
-    b << 1, 1, 1, 1, 1, 1;
-    std::cout << "Here is the initial matrix d:\n" << b << std::endl;
+     MatrixXf b{6, 1};
+     b << 1, 1, 1, 1, 1, 1;
+     std::cout << "Here is the initial matrix d:\n" << b << std::endl;
 
-    */
+     */
 
     /*
     FullPivLU<MatrixXf> luB(A);

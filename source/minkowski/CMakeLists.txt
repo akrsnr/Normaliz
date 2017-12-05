@@ -8,10 +8,22 @@ INCLUDE_DIRECTORIES(..)
 INCLUDE_DIRECTORIES(../external/eigen)
 INCLUDE_DIRECTORIES(../external)
 
+include_directories("/usr/local/include/flint/flintxx")
+include_directories("/usr/local/include/flint/flint")
+include_directories("/usr/local/include/flint")
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -lflint -lmpfr -lgmp")
 
 
 INCLUDE_DIRECTORIES(${GMP_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${GMPXX_INCLUDE_DIR})
+
+#find_package (FLINT)
+#if (FLINT_FOUND)
+#    include_directories(${FLINT_INCLUDE_DIRS})
+    #target_link_libraries (helloworld ${BZIP2_LIBRARIES})
+#endif (FLINT_FOUND)
+
 
 
 
