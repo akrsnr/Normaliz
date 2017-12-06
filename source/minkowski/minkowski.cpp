@@ -17,7 +17,6 @@ using namespace libnormaliz;
 
 typedef long long Integer;
 
-
 const int INITIAL_VALUE = 999999;
 
 void printComponents(const vector< vector<Integer> >& v, const string &type) {
@@ -86,10 +85,10 @@ vector< vector<Integer > > hermiteNormalForm(const MatrixXf& A) {
     /* Fill FLINT matrix */
     for (size_t i = 0; i < row; i++) {
         for (size_t j = 0; j < col; j++) {
-            std::cout << transposedMatrix.at(i).at(j) << "  ";
+            //std::cout << transposedMatrix.at(i).at(j) << "  ";
             fmpz_set_si(fmpz_mat_entry(M, i, j), transposedMatrix.at(i).at(j));
         }
-        std::cout << "\n";
+        //std::cout << "\n";
     }
 
 
@@ -191,7 +190,14 @@ Cone<Integer> createU(MatrixXf A) {
     long rowSize = A.rows();
 
     const vector<vector <Integer> >& matrixAInequalities = hermiteNormalForm(A);
-    /* *** We have null spaced and rref'ed matrix from now on *** */
+
+    std::cout << "Hermit Normal Form\n";
+    for (auto const& v : matrixAInequalities) {
+        for (auto const i : v) {
+            std::cout << i << "  ";
+        }
+        std::cout << '\n';
+    }
 
 
     std::cout << "\nIdentity Matrix " << rowSize << " x " << rowSize << std::endl;
@@ -235,8 +241,11 @@ Cone<Integer> createU(MatrixXf A) {
     /*    -------   NULL-SPACED MATRIX EQUATIONS and INEQUALITIES    -------   */
 
     /* Equations Matrix A(kerneled) */
-    const vector< vector<Integer> >& equationsA = pairsA[Type::equations];
+    vector< vector<Integer> > equationsA = pairsA[Type::equations];
     std::cout << "Equations A(kerneled) vector size: " << equationsA.size();
+    for (auto& v : equationsA) {
+        std::reverse(std::begin(v), std::end(v));
+    }
     printComponents(equationsA, "");
 
     /* Inequalities Matrix A(kerneled) */
@@ -263,14 +272,14 @@ Cone<Integer> createU(MatrixXf A) {
     equationsResultingCone.reserve(equationsA.size() + equationsIdentity.size());
     equationsResultingCone.insert( equationsResultingCone.end(), equationsA.begin(), equationsA.end() );
     equationsResultingCone.insert( equationsResultingCone.end(), equationsIdentity.begin(), equationsIdentity.end() );
-    printComponents(equationsResultingCone, "All equations");
+    //printComponents(equationsResultingCone, "All equations");
 
 
     /* Gathering "Inequalities" */
     ineqsResultingCone.reserve(ineqA.size() + ineqIdentity.size());
     ineqsResultingCone.insert( ineqsResultingCone.end(), ineqA.begin(), ineqA.end() );
     ineqsResultingCone.insert( ineqsResultingCone.end(), ineqIdentity.begin(), ineqIdentity.end() );
-    printComponents(ineqsResultingCone, "All inequalities");
+    //printComponents(ineqsResultingCone, "All inequalities");
 
 
     /*                                   INTERSECTION                                       */
@@ -299,6 +308,7 @@ int main() {
     //A << 0, 0, 1,   0, 1, 0,   1, 0, 0,   -1, 0, 0,    0, 0, -1,   0, -1, 0;
 
 
+    /*
 //pdf
     MatrixXf A{10, 3};
     A <<
@@ -312,7 +322,7 @@ int main() {
         0, -1, 1 ,
         0, -1, 0 ,
         -1, 0, 1;
-
+*/
 
 /*
     // CUBE
@@ -327,7 +337,7 @@ int main() {
     */
 
 
-/*
+
       //cross_polytope(3)
     MatrixXf A{8,3};
     A << 	-1, 1, 1,
@@ -338,7 +348,7 @@ int main() {
              1, 1, 1,
              1, -1, 1,
              1, -1, -1;
-*/
+
 
 
      //cuboctahedron()
