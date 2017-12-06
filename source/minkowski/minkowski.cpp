@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include <vector>
 #include <libnormaliz/cone.h>
 #include <iomanip>
@@ -6,6 +7,7 @@
 #include "rref.hpp"
 
 #include <flint/fmpzxx.h>
+#include <unordered_set>
 #include "fmpz.h"
 #include "fmpz_mat.h"
 
@@ -25,12 +27,12 @@ void printComponents(const vector< vector<Integer> >& v, const string &type) {
     for ( auto const& i : v ) {
         delim = "";
         std::cout << "\n";
-        std::cout << "(";
+        std::cout << "[";
         for ( auto const& j : i ) {
             std::cout << delim << j;
-            delim = ", ";
+            delim = "\t";
         }
-        std::cout << "),   ";
+        std::cout << "],   ";
     }
     std::cout << "\n\n";
 }
@@ -60,16 +62,125 @@ vector<vector <T> > eigenTOvector(const MatrixXf &A) {
 }
 
 
-vector<vector <Integer> > fromRREFtoVectorInteger(const vector<vector <double> >& v ) {
-    vector<vector <Integer> > intVec {v.size(), vector<Integer>(v.at(0).size(), INITIAL_VALUE) };
+vector< vector<Integer > > hermiteNormalForm(const MatrixXf& A) {
+    std::cout << "original matrix \n" << A;
+    MatrixXf B = A;
+    B.transposeInPlace();
+    const vector< vector< Integer> >& transposedMatrix = eigenTOvector<Integer>(B);
+    unsigned long row = transposedMatrix.size();
+    unsigned long col = transposedMatrix.at(0).size();
+    //std::cerr << "row  " << row << "  col  " << col << '\n';
 
-    for (int i = 0; i < v.size(); ++i) {
-        for (int j = 0; j < v.at(i).size(); ++j) {
-            intVec[i][j] = static_cast<Integer >( v.at(i).at(j) );
+
+    fmpz_mat_t M {};
+    fmpz_mat_t M_null {};
+    fmpz_mat_t M_null_transpose {};
+    fmpz_mat_t M_hermit {};
+
+
+    fmpz_mat_init(M, row,col);
+    fmpz_mat_init(M_null, col,col);
+    fmpz_mat_init(M_null_transpose, col,col);
+    fmpz_mat_init(M_hermit, col,col);
+
+    /* Fill FLINT matrix */
+    for (size_t i = 0; i < row; i++) {
+        for (size_t j = 0; j < col; j++) {
+            std::cout << transposedMatrix.at(i).at(j) << "  ";
+            fmpz_set_si(fmpz_mat_entry(M, i, j), transposedMatrix.at(i).at(j));
         }
+        std::cout << "\n";
+    }
+    flint_printf(" M = \n");
+    fmpz_mat_print_pretty(M);
+
+    /* Calculation hermite normal form of given matrix */
+    long dimension = fmpz_mat_nullspace(M_null, M);
+    fmpz_mat_transpose(M_null_transpose, M_null);
+    fmpz_mat_hnf(M_hermit, M_null_transpose);
+
+    /*
+    std::cout << "dimension = " << dimension << std::endl;
+    flint_printf(" \nNull space = \n\n");
+    fmpz_mat_print_pretty(M_null);
+
+    flint_printf(" \nNull space transpose = \n\n");
+    fmpz_mat_print_pretty(M_null_transpose);
+
+    flint_printf(" \nHermit Form = \n\n");
+    fmpz_mat_print_pretty(M_hermit);
+     */
+
+    /* Up to here, we found hermite normal form of given matrix */
+
+
+    /* In HNF, sometimes the library doesn't give simplified result. For example,
+     * [2 0 2 0]
+     * [0 2 0 2]
+     * something similar matrices can be exist.
+     * I write a code snippet overcoming the problem simply.
+     * I put all elements in a 1D vector and 2D vector.
+     * I convert negative numbers into positive numbers in 1D vector.
+     */
+    vector<Integer> duplicateFind {};
+    vector< vector<Integer> > hermit {static_cast<unsigned long>(dimension), vector<Integer>(col, INITIAL_VALUE) };
+    for (int i = 0; i < dimension; i++) {
+        for (int j = 0; j < col; j++) {
+            fmpz *val = fmpz_mat_entry(M_hermit, i, j);
+            //std::cout << *val << "  ";
+            hermit[i][j] = *val;
+            if (*val < 0)
+                duplicateFind.push_back(*val * -1);
+            else
+                duplicateFind.push_back(*val);
+        }
+        std::cout << "\n";
     }
 
-    return  intVec;
+    /* There cannot be same elements in a set
+     * To get rid of sorting performance penalty, I put 1D elements in unordered_set
+     * Then again convert to vector
+     */
+    std::unordered_set<int> s;
+    for (int i : duplicateFind)
+        s.insert(i);
+    duplicateFind.assign( s.begin(), s.end() );
+
+    /*
+    for (auto const& v : duplicateFind) {
+        std::cout << v << "  ";
+    }
+    */
+
+    /*  If the vector now contains only two elements and smaller one is 0
+     * I divide all values by the max value
+     */
+    if (duplicateFind.size() == 2) {
+        long max;
+        long min;
+        if (duplicateFind[0] < duplicateFind[1]) {
+            max = duplicateFind[1];
+            min = duplicateFind[0];
+        } else {
+            max = duplicateFind[0];
+            min = duplicateFind[1];
+        }
+        if (max == 0 || min == 0)
+            for (int i = 0; i < dimension; i++) {
+                for (int j = 0; j < col; j++) {
+                    hermit[i][j] /= max;
+                }
+            }
+    }
+
+    /* Free memory */
+    fmpz_mat_clear(M_hermit);
+    fmpz_mat_clear(M_null_transpose);
+    fmpz_mat_clear(M_null);
+    fmpz_mat_clear(M);
+
+    /* return hermit 2d vector, echelon basis matrix */
+    return hermit;
 }
 
 
@@ -77,78 +188,7 @@ Cone<Integer> createU(MatrixXf A) {
     long columnSize = A.cols();
     long rowSize = A.rows();
 
-    /* Irregular-ordered right kernel calculation */
-    A.transposeInPlace();
-    FullPivLU<MatrixXf> lu(A);
-    MatrixXf A_null_space = lu.kernel();
-    A_null_space.transposeInPlace();
-    std::cout << "kerneled\n" << A_null_space << std::endl;
-
-    /* Row reduce echelon form to make it regular */
-    vector<vector <double> > rref = eigenTOvector<double>(A_null_space);
-    to_reduced_row_echelon_form(rref);
-    std::cout << "RREF before cast\n";
-    for ( const auto &row : rref ) {
-        for ( const auto &s : row ) {
-            std::cout << s << "  ";
-        }
-        std::cout << std::endl;
-    }
-
-    vector<vector <Integer> > intVec {rref.size(), vector<Integer>(rref.at(0).size(), INITIAL_VALUE) };
-    for (int i = 0; i < rref.size(); ++i) {
-        for (int j = 0; j < rref.at(i).size(); ++j) {
-            intVec[i][j] = 2*rref[i][j];
-        }
-    }
-/*
-    std::cout << "RREF form of kernel\n";
-    for ( const auto &row : intVec ) {
-        for ( const auto &s : row ) {
-            std::cout << s << "  ";
-        }
-        std::cout << std::endl;
-    }*/
-
-
-
-
-    int row_null = rref.size();
-    int col_null = rref.at(0).size();
-
-    int count = 0;
-    fmpz_mat_t M;
-    fmpz_mat_t M_h;
-    fmpz_mat_init(M, row_null,col_null);
-    fmpz_mat_init(M_h, col_null,col_null);
-
-    fmpz_mat_t M_rref;
-
-
-
-    for (int i = 0; i < row_null; i++) {
-        for (int j = 0; j < col_null; j++) {
-            fmpz_set_d(fmpz_mat_entry(M, i, j), rref.at(i).at(j));
-        }
-    }
-    flint_printf(" M = \n");
-    fmpz_mat_print_pretty(M);
-
-
-    fmpz_mat_hnf(M_h, M);
-    flint_printf(" \n\nHermit = \n\n\n");
-    fmpz_mat_print_pretty(M_h);
-
-
-    fmpz_mat_clear(M);
-    fmpz_mat_clear(M_h);
-
-
-    //vector<vector <Integer> > intVecA = fromRREFtoVectorInteger(rref);
-
-
-
-    const vector<vector <Integer> >& matrixAInequalities = intVec;
+    const vector<vector <Integer> >& matrixAInequalities = hermiteNormalForm(A);
     /* *** We have null spaced and rref'ed matrix from now on *** */
 
 
@@ -293,13 +333,14 @@ int main() {
     A << 0, 0, 1,   0, 1, 0,   1, 0, 0,   -1, 0, 0,    0, 0, -1,   0, -1, 0;
 */
 
-
-    /*//cross_polytope(2)
+    /*
+    //cross_polytope(2)
     MatrixXf A{4,2};
-    A << -1, -1, -1, 1, 1, 1, 1, -1;*/
+    A << -1, -1, -1, 1, 1, 1, 1, -1;
+    */
 
 
-     /*
+/*
       //cross_polytope(3)
     MatrixXf A{8,3};
     A << 	-1, 1, 1,
@@ -310,8 +351,8 @@ int main() {
              1, 1, 1,
              1, -1, 1,
              1, -1, -1;
-
 */
+
 
      //cuboctahedron()
 /*
@@ -331,7 +372,9 @@ int main() {
         1, 1, -1,
         1, 1, 1;
 */
-    /*Cone<Integer> resultingCone = createU(A);
+
+
+    Cone<Integer> resultingCone = createU(A);
 
     std::cout << "\n\n\n\n ~~ ~~ From now on main()-definitions are being run ~~ ~~" << std::endl;
 
@@ -340,65 +383,6 @@ int main() {
 
     printComponents(TypesResultingCone[Type::equations], "Equations of Intersected resulting Cone");
     printComponents(TypesResultingCone[Type::inequalities], "Inequalities of Intersected resulting Cone");
-*/
-
-    MatrixXf B = A;
-    //B.transposeInPlace();
-    vector< vector< Integer> > rref = eigenTOvector<Integer>(B);
-    int row_null = rref.size();
-    int col_null = rref.at(0).size();
-
-    int count = 0;
-    fmpz_mat_t M;
-    fmpz_mat_t M_null;
-    fmpz_mat_init(M, row_null,col_null);
-    fmpz_mat_init(M_null, col_null,col_null);
-    fmpz_mat_t M_null_transpose;
-    fmpz_mat_init(M_null_transpose, col_null,col_null);
-    fmpz_mat_t M_hermit;
-    fmpz_mat_init(M_hermit, col_null,col_null);
-
-
-
-
-
-
-
-    for (int i = 0; i < row_null; i++) {
-        for (int j = 0; j < col_null; j++) {
-            std::cout << rref.at(i).at(j) << "  ";
-            fmpz_set_si(fmpz_mat_entry(M, i, j), rref.at(i).at(j));
-        }
-        std::cout << "\n";
-    }
-    flint_printf(" M = \n");
-    fmpz_mat_print_pretty(M);
-
-
-    int x = fmpz_mat_nullspace(M_null, M);
-    std::cout << "dimension = " << x << std::endl;
-    flint_printf(" \nNull space = \n\n");
-    fmpz_mat_print_pretty(M_null);
-
-    fmpz_mat_transpose(M_null_transpose, M_null);
-    flint_printf(" \nNull space transpose = \n\n");
-    fmpz_mat_print_pretty(M_null_transpose);
-
-    fmpz_mat_hnf(M_hermit, M_null_transpose);
-    flint_printf(" \nHermit Form = \n\n");
-    fmpz_mat_print_pretty(M_hermit);
-
-
-
-
-
-
-    fmpz_mat_clear(M);
-    fmpz_mat_clear(M_null);
-    fmpz_mat_clear(M_hermit);
-    fmpz_mat_clear(M_null_transpose);
-
-
 
 
 
