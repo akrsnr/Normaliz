@@ -63,7 +63,7 @@ vector<vector <T> > eigenTOvector(const MatrixXf &A) {
 
 
 vector< vector<Integer > > hermiteNormalForm(const MatrixXf& A) {
-    std::cout << "original matrix \n" << A;
+    //std::cout << "original matrix \n" << A;
     MatrixXf B = A;
     B.transposeInPlace();
     const vector< vector< Integer> >& transposedMatrix = eigenTOvector<Integer>(B);
@@ -91,8 +91,7 @@ vector< vector<Integer > > hermiteNormalForm(const MatrixXf& A) {
         }
         std::cout << "\n";
     }
-    flint_printf(" M = \n");
-    fmpz_mat_print_pretty(M);
+
 
     /* Calculation hermite normal form of given matrix */
     long dimension = fmpz_mat_nullspace(M_null, M);
@@ -100,6 +99,9 @@ vector< vector<Integer > > hermiteNormalForm(const MatrixXf& A) {
     fmpz_mat_hnf(M_hermit, M_null_transpose);
 
     /*
+     flint_printf(" M = \n");
+    fmpz_mat_print_pretty(M);
+
     std::cout << "dimension = " << dimension << std::endl;
     flint_printf(" \nNull space = \n\n");
     fmpz_mat_print_pretty(M_null);
@@ -134,7 +136,7 @@ vector< vector<Integer > > hermiteNormalForm(const MatrixXf& A) {
             else
                 duplicateFind.push_back(*val);
         }
-        std::cout << "\n";
+        //std::cout << "\n";
     }
 
     /* There cannot be same elements in a set
@@ -284,21 +286,6 @@ Cone<Integer> createU(MatrixXf A) {
      */
     resultingCone.compute(ConeProperty::Generators);
     const vector<vector <Integer> >& gens = resultingCone.getGenerators();
-
-    /*
-     * ************* Documentation says **************************
-     * Unless you are interested a single result, we recommend
-     * to use compute since the data asked for can then be computed in a single run.
-     * ***********************************************************
-     * Here, I use the generators of intersected(resulting) cone to create a cone anew.
-     * Frankly, the generators are used to recreate a cone as inequalities
-     */
-    Cone<Integer> reCreatebyGenerators = Cone<Integer>(Type::inequalities, gens);
-    //reCreatebyGenerators.compute(ConeProperty::Generators);
-    const vector<vector <Integer> >& gens2 = reCreatebyGenerators.getGenerators();
-    printComponents(gens2, "Recreated cone's Generators");
-
-
 
     return resultingCone;
 
