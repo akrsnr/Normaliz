@@ -185,7 +185,7 @@ vector< vector<Integer > > hermiteNormalForm(const MatrixXf& A) {
 }
 
 
-Cone<Integer> createU(MatrixXf A) {
+Cone<Integer> createU(const MatrixXf &A) {
     long columnSize = A.cols();
     long rowSize = A.rows();
 
@@ -288,11 +288,6 @@ Cone<Integer> createU(MatrixXf A) {
     Cone<Integer> resultingCone = Cone<Integer>(Type::equations, equationsResultingCone,
                                                 Type::inequalities, ineqsResultingCone);
 
-    /* AFTER TUESDAY, 28th MEETING */
-
-    /*
-     * Here, I find generators of intersected(resulting) cone.
-     */
     resultingCone.compute(ConeProperty::Generators);
     const vector<vector <Integer> >& gens = resultingCone.getGenerators();
 
