@@ -60,6 +60,23 @@ vector<vector <T> > eigenTOvector(const MatrixXf &A) {
 
 }
 
+Integer gcd(Integer a, Integer b) {
+    while (b > 0)
+    {
+        Integer temp = b;
+        b = a % b; // % is remainder
+        a = temp;
+    }
+    return a;
+}
+
+long gcd(vector<Integer> input) {
+    Integer result = input[0];
+    for(Integer i = 1; i < input.size(); i++)
+        result = gcd(result, input[i]);
+    return result;
+}
+
 
 vector< vector<Integer > > hermiteNormalForm(const MatrixXf& A) {
     //std::cout << "original matrix \n" << A;
@@ -128,14 +145,14 @@ vector< vector<Integer > > hermiteNormalForm(const MatrixXf& A) {
     for (int i = 0; i < dimension; i++) {
         for (int j = 0; j < col; j++) {
             fmpz *val = fmpz_mat_entry(M_hermit, i, j);
-            //std::cout << *val << "  ";
+            std::cout << *val << "  ";
             hermit[i][j] = *val;
             if (*val < 0)
                 duplicateFind.push_back(*val * -1);
             else
                 duplicateFind.push_back(*val);
         }
-        //std::cout << "\n";
+        std::cout << "\n";
     }
 
     /* There cannot be same elements in a set
@@ -147,31 +164,20 @@ vector< vector<Integer > > hermiteNormalForm(const MatrixXf& A) {
         s.insert(i);
     duplicateFind.assign( s.begin(), s.end() );
 
-    /*
+
+    /*std::cout << "duplicate\n";
     for (auto const& v : duplicateFind) {
         std::cout << v << "  ";
-    }
-    */
+    }*/
 
-    /*  If the vector now contains only two elements and smaller one is 0
-     * I divide all values by the max value
-     */
-    if (duplicateFind.size() == 2) {
-        long max;
-        long min;
-        if (duplicateFind[0] < duplicateFind[1]) {
-            max = duplicateFind[1];
-            min = duplicateFind[0];
-        } else {
-            max = duplicateFind[0];
-            min = duplicateFind[1];
+    Integer gcdResult = gcd(duplicateFind);
+    //std::cout << "result : " << gcdResult << std::endl;
+
+
+    for (int i = 0; i < dimension; i++) {
+        for (int j = 0; j < col; j++) {
+            hermit[i][j] /= gcdResult;
         }
-        if (max == 0 || min == 0)
-            for (int i = 0; i < dimension; i++) {
-                for (int j = 0; j < col; j++) {
-                    hermit[i][j] /= max;
-                }
-            }
     }
 
     /* Free memory */
@@ -303,7 +309,7 @@ int main() {
     //A << 0, 0, 1,   0, 1, 0,   1, 0, 0,   -1, 0, 0,    0, 0, -1,   0, -1, 0;
 
 
-    /*
+/*
 //pdf
     MatrixXf A{10, 3};
     A <<
@@ -325,14 +331,14 @@ int main() {
     A << 0, 0, 1,   0, 1, 0,   1, 0, 0,   -1, 0, 0,    0, 0, -1,   0, -1, 0;
 */
 
-    /*
+
     //cross_polytope(2)
     MatrixXf A{4,2};
     A << -1, -1, -1, 1, 1, 1, 1, -1;
-    */
 
 
 
+/*
       //cross_polytope(3)
     MatrixXf A{8,3};
     A << 	-1, 1, 1,
@@ -343,11 +349,11 @@ int main() {
              1, 1, 1,
              1, -1, 1,
              1, -1, -1;
+*/
 
-
-
-     //cuboctahedron()
 /*
+     //cuboctahedron()
+
     MatrixXf A{14,3};
     A << 0, 1, 0,
         1, 0, 0,
