@@ -145,14 +145,14 @@ vector< vector<Integer > > hermiteNormalForm(const MatrixXf& A) {
     for (int i = 0; i < dimension; i++) {
         for (int j = 0; j < col; j++) {
             fmpz *val = fmpz_mat_entry(M_hermit, i, j);
-            std::cout << *val << "  ";
+            //std::cout << *val << "  ";
             hermit[i][j] = *val;
             if (*val < 0)
                 duplicateFind.push_back(*val * -1);
             else
                 duplicateFind.push_back(*val);
         }
-        std::cout << "\n";
+        //std::cout << "\n";
     }
 
     /* There cannot be same elements in a set
@@ -309,7 +309,7 @@ int main() {
     //A << 0, 0, 1,   0, 1, 0,   1, 0, 0,   -1, 0, 0,    0, 0, -1,   0, -1, 0;
 
 
-/*
+
 //pdf
     MatrixXf A{10, 3};
     A <<
@@ -323,7 +323,7 @@ int main() {
         0, -1, 1 ,
         0, -1, 0 ,
         -1, 0, 1;
-*/
+
 
 /*
     // CUBE
@@ -331,11 +331,11 @@ int main() {
     A << 0, 0, 1,   0, 1, 0,   1, 0, 0,   -1, 0, 0,    0, 0, -1,   0, -1, 0;
 */
 
-
+/*
     //cross_polytope(2)
     MatrixXf A{4,2};
     A << -1, -1, -1, 1, 1, 1, 1, -1;
-
+*/
 
 
 /*
